@@ -305,6 +305,83 @@ public class AuthController {
         );
     }
 
+    // ⭐⭐⭐ PLACE ORDER
+    @PostMapping("/place-order")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<OrderResponseDTO>> placeOrder(
+            @RequestBody PlaceOrderRequestDTO dto
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        OrderResponseDTO order = authService.placeOrder(email, dto);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Order placed successfully", order)
+        );
+    }
+
+    // ⭐⭐⭐ GET MY ORDERS (BUYER HISTORY)
+    @GetMapping("/my-orders")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<List<OrderResponseDTO>>> getMyOrders() {
+
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        List<OrderResponseDTO> orders = authService.getMyOrders(email);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Order history fetched successfully", orders)
+        );
+    }
+
+    // ⭐⭐⭐ GET SELLER ORDERS LIST
+    @GetMapping("/seller-orders")
+    @PreAuthorize("hasAuthority('SELLER')")
+    public ResponseEntity<ApiResponseDTO<List<OrderResponseDTO>>> getSellerOrders() {
+
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        List<OrderResponseDTO> orders = authService.getSellerOrders(email);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Seller orders fetched", orders)
+        );
+    }
+
+    // ⭐⭐⭐ DELETE BUYER ORDER (Cancel Order)
+    @DeleteMapping("/my-orders/{orderId}")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<String>> deleteMyOrder(
+            @PathVariable String orderId
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        authService.deleteMyOrder(email, orderId);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Order cancelled successfully", null)
+        );
+    }
+
+
+    // ⭐⭐⭐ DELETE SELLER ORDER (Seller removes order)
+    @DeleteMapping("/seller-orders/{orderId}")
+    @PreAuthorize("hasAuthority('SELLER')")
+    public ResponseEntity<ApiResponseDTO<String>> deleteSellerOrder(
+            @PathVariable String orderId
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        authService.deleteSellerOrder(email, orderId);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Order removed successfully", null)
+        );
+    }
+
+
+
+
 }
 
 
