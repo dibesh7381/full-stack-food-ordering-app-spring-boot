@@ -11,9 +11,8 @@ import RoleBasedRoute from "./components/RoleBasedRoute";
 import BecomeSeller from "./pages/BecomeSeller";
 
 import SellerDashboard from "./pages/SellerDashboard";
-
-// ⭐ NEW IMPORT → Foods Page
 import Foods from "./pages/Foods";
+import Cart from "./pages/Cart";
 
 export default function App() {
   return (
@@ -22,14 +21,12 @@ export default function App() {
 
       <Routes>
 
-        {/* ⭐ PUBLIC PAGE */}
+        {/* Public */}
         <Route path="/" element={<Homepage />} />
-
-        {/* Public Pages */}
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
 
-        {/* ⭐ PRIVATE PAGE */}
+        {/* Private */}
         <Route
           path="/profile"
           element={
@@ -39,7 +36,7 @@ export default function App() {
           }
         />
 
-        {/* ⭐ ⭐ ⭐ ALL FOODS (ONLY LOGGED-IN USERS) */}
+        {/* ⭐ Foods — Logged-in users only */}
         <Route
           path="/foods"
           element={
@@ -49,7 +46,17 @@ export default function App() {
           }
         />
 
-        {/* ⭐ ONLY CUSTOMER → BECOME SELLER */}
+        {/* ⭐ CUSTOMER ONLY → CART */}
+        <Route
+          path="/cart"
+          element={
+            <RoleBasedRoute allowedRoles={["CUSTOMER"]}>
+              <Cart />
+            </RoleBasedRoute>
+          }
+        />
+
+        {/* ⭐ CUSTOMER ONLY → Become Seller */}
         <Route
           path="/become-seller"
           element={
@@ -59,7 +66,7 @@ export default function App() {
           }
         />
 
-        {/* ⭐ ONLY SELLER → SELLER DASHBOARD */}
+        {/* ⭐ SELLER ONLY → Dashboard */}
         <Route
           path="/seller/dashboard"
           element={
@@ -73,6 +80,7 @@ export default function App() {
     </BrowserRouter>
   );
 }
+
 
 
 

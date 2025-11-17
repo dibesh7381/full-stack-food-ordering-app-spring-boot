@@ -1,11 +1,22 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useState } from "react";
-import { Menu, X } from "lucide-react";
-import { useProfileQuery, useLogoutMutation } from "../api/authApi";
+import { Menu, X, ShoppingCart } from "lucide-react";
+import { 
+  useProfileQuery, 
+  useLogoutMutation,
+  useGetMyCartQuery 
+} from "../api/authApi";
 
 export default function Navbar() {
   const { data, isSuccess } = useProfileQuery();
   const userRole = data?.data?.role;
+
+  // ⭐ CART QUERY (Customer only)
+  const { data: cartData } = useGetMyCartQuery(undefined, {
+    skip: userRole !== "CUSTOMER"
+  });
+
+  const cartCount = cartData?.data?.length || 0;
 
   const [logout] = useLogoutMutation();
   const [open, setOpen] = useState(false);
@@ -29,20 +40,36 @@ export default function Navbar() {
         <div className="hidden md:flex space-x-6 items-center">
           <Link to="/">Home</Link>
 
-          {/* ⭐ Foods Page (Logged-In Users Only) */}
           {isSuccess && <Link to="/foods">Foods</Link>}
 
-          {/* ⭐ CUSTOMER ONLY */}
-          {isSuccess && userRole === "CUSTOMER" && (
-            <Link to="/become-seller">Become Seller</Link>
-          )}
-
-          {/* ⭐ SELLER ONLY */}
+          {/* SELLER ONLY */}
           {isSuccess && userRole === "SELLER" && (
             <Link to="/seller/dashboard">Seller Dashboard</Link>
           )}
 
           <Link to="/profile">Profile</Link>
+
+          {/* CUSTOMER ONLY */}
+          {isSuccess && userRole === "CUSTOMER" && (
+            <>
+              <Link to="/become-seller">Become Seller</Link>
+
+              {/* ⭐ CART ICON WITH BADGE */}
+              <Link to="/cart" className="relative">
+                <ShoppingCart size={26} className="text-white hover:text-gray-200" />
+
+                {/* BADGE */}
+                {cartCount > 0 && (
+                  <span className="
+                    absolute -top-2 -right-2 bg-red-500 text-white text-xs
+                    px-2 py-[2px] rounded-full
+                    ">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
 
           {!isSuccess ? (
             <>
@@ -80,43 +107,54 @@ export default function Navbar() {
 
         {/* SIDEBAR LINKS */}
         <div className="flex flex-col mt-4 space-y-4 pl-6 text-lg">
-          <Link to="/" onClick={() => setOpen(false)}>
-            Home
-          </Link>
 
-          {/* ⭐ Foods Page */}
+          <Link to="/" onClick={() => setOpen(false)}>Home</Link>
+
           {isSuccess && (
-            <Link to="/foods" onClick={() => setOpen(false)}>
-              Foods
-            </Link>
+            <Link to="/foods" onClick={() => setOpen(false)}>Foods</Link>
           )}
 
-          {/* ⭐ CUSTOMER ONLY */}
+          {/* CUSTOMER ONLY */}
           {isSuccess && userRole === "CUSTOMER" && (
-            <Link to="/become-seller" onClick={() => setOpen(false)}>
-              Become Seller
-            </Link>
+            <>
+              <Link 
+                to="/become-seller"  
+                onClick={() => setOpen(false)}>
+                Become Seller
+              </Link>
+
+              {/* ⭐ MOBILE CART WITH COUNT */}
+              <Link 
+                to="/cart"
+                className="flex items-center gap-2"
+                onClick={() => setOpen(false)}
+              >
+                <ShoppingCart size={22} />
+
+                Cart
+
+                {cartCount > 0 && (
+                  <span className="bg-red-500 px-2 py-[1px] rounded-full text-xs">
+                    {cartCount}
+                  </span>
+                )}
+              </Link>
+            </>
           )}
 
-          {/* ⭐ SELLER ONLY */}
+          {/* SELLER ONLY */}
           {isSuccess && userRole === "SELLER" && (
             <Link to="/seller/dashboard" onClick={() => setOpen(false)}>
               Seller Dashboard
             </Link>
           )}
 
-          <Link to="/profile" onClick={() => setOpen(false)}>
-            Profile
-          </Link>
+          <Link to="/profile" onClick={() => setOpen(false)}>Profile</Link>
 
           {!isSuccess ? (
             <>
-              <Link to="/signup" onClick={() => setOpen(false)}>
-                Signup
-              </Link>
-              <Link to="/login" onClick={() => setOpen(false)}>
-                Login
-              </Link>
+              <Link to="/signup" onClick={() => setOpen(false)}>Signup</Link>
+              <Link to="/login" onClick={() => setOpen(false)}>Login</Link>
             </>
           ) : (
             <button
@@ -131,6 +169,7 @@ export default function Navbar() {
     </>
   );
 }
+
 
 
 

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSignupMutation } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
 
@@ -12,16 +12,39 @@ export default function Signup() {
     password: "",
   });
 
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await signup(form).unwrap();
-    alert("Signup successful!");
-    navigate("/login");
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      await signup(form).unwrap();
+      setSuccessMsg("Signup successful! Redirecting...");
+
+      // redirect after 2 sec
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (err) {
+      setErrorMsg(err?.data?.message || "Signup failed. Try again!");
+    }
   };
+
+  // Auto hide messages
+  useEffect(() => {
+    if (errorMsg || successMsg) {
+      const timer = setTimeout(() => {
+        setErrorMsg("");
+        setSuccessMsg("");
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [errorMsg, successMsg]);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -67,6 +90,16 @@ export default function Signup() {
             />
           </div>
 
+          {/* FIXED SPACE FOR ERROR / SUCCESS MESSAGE */}
+          <div className="h-6 text-center">
+            {errorMsg && (
+              <p className="text-red-600 text-sm">{errorMsg}</p>
+            )}
+            {successMsg && (
+              <p className="text-green-600 text-sm">{successMsg}</p>
+            )}
+          </div>
+
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-3 rounded-lg font-medium hover:bg-blue-700 transition"
@@ -88,4 +121,5 @@ export default function Signup() {
     </div>
   );
 }
+
 

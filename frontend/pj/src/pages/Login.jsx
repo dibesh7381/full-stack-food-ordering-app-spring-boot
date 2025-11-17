@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLoginMutation } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
 
@@ -6,10 +6,10 @@ export default function Login() {
   const [login] = useLoginMutation();
   const navigate = useNavigate();
 
-  const [form, setForm] = useState({
-    email: "",
-    password: "",
-  });
+  const [form, setForm] = useState({ email: "", password: "" });
+
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -17,10 +17,30 @@ export default function Login() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await login(form).unwrap();
-    alert("Login successful!");
-    navigate("/profile");
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    try {
+      await login(form).unwrap();
+      setSuccessMsg("Login successful!");
+
+      setTimeout(() => navigate("/profile"), 2000);
+
+    } catch (err) {
+      setErrorMsg(err?.data?.message || "Login failed. Try again!");
+    }
   };
+
+  // Auto-hide after 2 sec
+  useEffect(() => {
+    if (errorMsg || successMsg) {
+      const t = setTimeout(() => {
+        setErrorMsg("");
+        setSuccessMsg("");
+      }, 2000);
+      return () => clearTimeout(t);
+    }
+  }, [errorMsg, successMsg]);
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
@@ -39,6 +59,7 @@ export default function Login() {
               name="email"
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter email"
+              value={form.email}
               onChange={handleChange}
             />
           </div>
@@ -51,8 +72,19 @@ export default function Login() {
               type="password"
               className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter password"
+              value={form.password}
               onChange={handleChange}
             />
+          </div>
+
+          {/* FIXED SPACE FOR ERROR / SUCCESS MESSAGE */}
+          <div className="h-6 text-center">
+            {errorMsg && (
+              <p className="text-red-600 text-sm">{errorMsg}</p>
+            )}
+            {successMsg && (
+              <p className="text-green-600 text-sm">{successMsg}</p>
+            )}
           </div>
 
           <button
@@ -76,3 +108,5 @@ export default function Login() {
     </div>
   );
 }
+
+

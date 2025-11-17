@@ -10,60 +10,67 @@ export default function SellerDashboard() {
   const seller = data?.data;
 
   return (
-    <>
-         <div className="min-h-screen bg-gray-100 flex justify-center items-center p-4">
+    <div className="min-h-screen bg-gray-100 p-4 flex justify-center items-start">
 
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-lg p-6 border">
+      {/* PAGE CONTAINER */}
+      <div className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-        {/* Heading */}
-        <h1 className="text-3xl font-bold text-center text-blue-600 mb-6">
-          Seller Dashboard
-        </h1>
+        {/* SELLER CARD (CHOTA CARD) */}
+        <div className="bg-white rounded-2xl shadow-lg p-5 border">
 
-        {/* Image */}
-        <div className="flex justify-center mb-6">
-          <img
-            src={seller.imageUrl}
-            alt="Shop"
-            className="w-40 h-40 object-cover rounded-xl shadow-md border"
-          />
+          <h1 className="text-2xl font-bold text-center text-blue-600 mb-5">
+            Seller Dashboard
+          </h1>
+
+          <div className="flex justify-center mb-5">
+            <img
+              src={seller.imageUrl}
+              alt="Shop"
+              className="w-32 h-32 object-cover rounded-xl shadow-md border"
+            />
+          </div>
+
+          {/* SMALLER INFO CARD */}
+          <div className="bg-gray-50 rounded-xl p-4 shadow-inner space-y-3">
+
+            <div>
+              <p className="text-xs text-gray-500 font-semibold">Shop Name</p>
+              <p className="text-base font-medium">{seller.shopName}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 font-semibold">Location</p>
+              <p className="text-base font-medium">{seller.location}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 font-semibold">Established Year</p>
+              <p className="text-base font-medium">{seller.establishedYear}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 font-semibold">Business Type</p>
+              <p className="text-base font-medium">{seller.businessType}</p>
+            </div>
+
+            <div>
+              <p className="text-xs text-gray-500 font-semibold">Owner Name</p>
+              <p className="text-base font-medium">{seller.ownerName}</p>
+            </div>
+
+          </div>
         </div>
 
-        {/* Info Card */}
-        <div className="bg-gray-50 rounded-xl p-5 shadow-inner space-y-4">
-
-          <div>
-            <p className="text-sm text-gray-500 font-semibold">Shop Name</p>
-            <p className="text-lg font-medium">{seller.shopName}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500 font-semibold">Location</p>
-            <p className="text-lg font-medium">{seller.location}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500 font-semibold">Established Year</p>
-            <p className="text-lg font-medium">{seller.establishedYear}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500 font-semibold">Business Type</p>
-            <p className="text-lg font-medium">{seller.businessType}</p>
-          </div>
-
-          <div>
-            <p className="text-sm text-gray-500 font-semibold">Owner Name</p>
-            <p className="text-lg font-medium">{seller.ownerName}</p>
-          </div>
-
+        {/* ADD FOOD FORM — SAME PAGE FIT */}
+        <div className="bg-white rounded-2xl shadow-lg p-5 border">
+          <h2 className="text-xl font-bold text-blue-600 mb-4 text-center">
+            Add New Food Item
+          </h2>
+          <AddFoodForm />
         </div>
+
       </div>
     </div>
-
-    <AddFoodForm/>
-    </>
-    
   );
 }
 

@@ -7,9 +7,11 @@ export const authApi = createApi({
     credentials: "include",
   }),
 
-  tagTypes: ["Profile", "Seller", "Food"],
+  tagTypes: ["Profile", "Seller", "Food", "Cart"],
 
   endpoints: (builder) => ({
+
+    // ⭐ SIGNUP
     signup: builder.mutation({
       query: (body) => ({
         url: "/signup",
@@ -18,6 +20,7 @@ export const authApi = createApi({
       }),
     }),
 
+    // ⭐ LOGIN
     login: builder.mutation({
       query: (body) => ({
         url: "/login",
@@ -27,14 +30,16 @@ export const authApi = createApi({
       invalidatesTags: ["Profile", "Seller"],
     }),
 
+    // ⭐ LOGOUT
     logout: builder.mutation({
       query: () => ({
         url: "/logout",
         method: "POST",
       }),
-      invalidatesTags: ["Profile", "Seller"],
+      invalidatesTags: ["Profile", "Seller", "Cart"],
     }),
 
+    // ⭐ PROFILE
     profile: builder.query({
       query: () => "/profile",
       providesTags: ["Profile"],
@@ -53,6 +58,7 @@ export const authApi = createApi({
       query: () => "/homepage",
     }),
 
+    // ⭐ BECOME SELLER
     becomeSeller: builder.mutation({
       query: (formData) => ({
         url: "/become-seller",
@@ -62,6 +68,7 @@ export const authApi = createApi({
       invalidatesTags: ["Profile", "Seller"],
     }),
 
+    // ⭐ GET SELLER DETAILS
     getSeller: builder.query({
       query: () => "/seller",
       providesTags: ["Seller"],
@@ -84,15 +91,13 @@ export const authApi = createApi({
       providesTags: ["Food"],
     }),
 
-    // ⭐ UPDATE FOOD — FIXED
+    // ⭐ UPDATE FOOD
     updateFood: builder.mutation({
       query: ({ id, body }) => ({
         url: `/update-food/${id}`,
         method: "PUT",
         body,
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
       }),
       invalidatesTags: ["Food"],
     }),
@@ -105,11 +110,57 @@ export const authApi = createApi({
       }),
       invalidatesTags: ["Food"],
     }),
-    // ⭐ All foods (public)
+
+    // ⭐ GET ALL FOODS
     getAllFoods: builder.query({
       query: () => "/all-foods",
       providesTags: ["Food"],
     }),
+
+    // ⭐⭐⭐ ADD TO CART
+    addToCart: builder.mutation({
+      query: (body) => ({
+        url: "/add-to-cart",
+        method: "POST",
+        body,
+        headers: { "Content-Type": "application/json" },
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
+    // ⭐⭐⭐ GET MY CART
+    getMyCart: builder.query({
+      query: () => "/my-cart",
+      providesTags: ["Cart"],
+    }),
+
+    // ⭐⭐⭐ INCREASE QTY
+    increaseQty: builder.mutation({
+      query: (cartId) => ({
+        url: `/cart/increase/${cartId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
+    // ⭐⭐⭐ DECREASE QTY
+    decreaseQty: builder.mutation({
+      query: (cartId) => ({
+        url: `/cart/decrease/${cartId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
+    // ⭐⭐⭐ DELETE CART ITEM
+    deleteCartItem: builder.mutation({
+      query: (cartId) => ({
+        url: `/cart/delete/${cartId}`,
+        method: "DELETE",
+      }),
+      invalidatesTags: ["Cart"],
+    }),
+
   }),
 });
 
@@ -128,4 +179,13 @@ export const {
   useUpdateFoodMutation,
   useDeleteFoodMutation,
   useGetAllFoodsQuery,
+
+  // ⭐ CART HOOKS
+  useAddToCartMutation,
+  useGetMyCartQuery,
+  useIncreaseQtyMutation,
+  useDecreaseQtyMutation,
+  useDeleteCartItemMutation,
 } = authApi;
+
+
