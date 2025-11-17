@@ -2,7 +2,8 @@ import React, { useState } from "react";
 import {
   useGetAllFoodsQuery,
   useProfileQuery,
-  useAddToCartMutation
+  useAddToCartMutation,
+  usePlaceOrderMutation,   // ⭐ NEW
 } from "../api/authApi";
 import { useNavigate } from "react-router-dom";
 import { Plus, Minus } from "lucide-react";
@@ -15,6 +16,8 @@ const Foods = () => {
   const userRole = profileData?.data?.role;
 
   const [addToCart] = useAddToCartMutation();
+  const [placeOrder] = usePlaceOrderMutation(); // ⭐ NEW
+
   const navigate = useNavigate();
 
   const [selectedSize, setSelectedSize] = useState({});
@@ -27,17 +30,18 @@ const Foods = () => {
   const increaseQty = (id) => {
     setQuantity((prev) => ({
       ...prev,
-      [id]: (prev[id] || 1) + 1
+      [id]: (prev[id] || 1) + 1,
     }));
   };
 
   const decreaseQty = (id) => {
     setQuantity((prev) => ({
       ...prev,
-      [id]: Math.max(1, (prev[id] || 1) - 1)
+      [id]: Math.max(1, (prev[id] || 1) - 1),
     }));
   };
 
+  // ⭐ ADD TO CART
   const handleAddToCart = async (food) => {
     const size = selectedSize[food.id];
     const qty = quantity[food.id] || 1;
@@ -52,6 +56,7 @@ const Foods = () => {
     }
   };
 
+  // ⭐ BUY NOW → DIRECT PLACE ORDER
   const handleBuyNow = async (food) => {
     const size = selectedSize[food.id];
     const qty = quantity[food.id] || 1;
@@ -59,10 +64,17 @@ const Foods = () => {
     if (!size) return alert("Please select size!");
 
     try {
-      await addToCart({ foodId: food.id, size, quantity: qty }).unwrap();
-      navigate("/cart");
+      await placeOrder({
+        foodId: food.id,
+        size,
+        quantity: qty,
+      }).unwrap();
+
+      alert("Order placed successfully!");
+
+      navigate("/my-orders"); // ⭐ redirect to orders page
     } catch (err) {
-      alert(err?.data?.message || "Failed to add to cart");
+      alert(err?.data?.message || "Failed to place order");
     }
   };
 
@@ -70,15 +82,29 @@ const Foods = () => {
 
   return (
     <div className="max-w-6xl mx-auto p-5">
-      <h1 className="text-3xl font-bold mb-6">All Foods</h1>
 
+      {/* ⭐ TOP BAR */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-3xl font-bold">All Foods</h1>
+
+        {userRole === "CUSTOMER" && (
+          <button
+            onClick={() => navigate("/my-orders")}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            My Orders
+          </button>
+        )}
+      </div>
+
+      {/* ⭐ FOOD GRID */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {foods.map((food) => (
           <div
             key={food.id}
             className="border rounded-xl shadow-md p-4 bg-white hover:shadow-lg transition"
           >
-            {/* ⭐ FULL IMAGE (NO GAP, NO CROP) */}
+            {/* ⭐ IMAGE */}
             <div className="w-full aspect-video bg-gray-100 rounded-lg overflow-hidden">
               <img
                 src={food.imageUrl}
@@ -97,7 +123,7 @@ const Foods = () => {
               {food.category} • {food.type}
             </p>
 
-            {/* ⭐ SIZE SELECTOR */}
+            {/* ⭐ SIZE SELECT */}
             <div className="mt-3">
               <label className="font-semibold text-sm">Choose Size:</label>
               <div className="flex flex-wrap gap-2 mt-2">
@@ -109,8 +135,7 @@ const Foods = () => {
                       key={s.size}
                       onClick={() => handleSizeChange(food.id, s.size)}
                       disabled={userRole === "SELLER"}
-                      className={`
-                        px-3 py-1 rounded-full text-sm border transition 
+                      className={`px-3 py-1 rounded-full text-sm border transition 
                         ${
                           isSelected
                             ? "bg-blue-600 text-white border-blue-600"
@@ -126,7 +151,7 @@ const Foods = () => {
               </div>
             </div>
 
-            {/* ⭐ MODERN QUANTITY (+ / -) */}
+            {/* ⭐ QUANTITY */}
             <div className="mt-3">
               <label className="font-semibold text-sm">Quantity:</label>
 
@@ -153,7 +178,7 @@ const Foods = () => {
               </div>
             </div>
 
-            {/* BUTTONS */}
+            {/* ⭐ BUTTONS */}
             <div className="mt-4 flex gap-3">
               <button
                 className={`flex-1 py-2 rounded font-semibold ${
@@ -188,6 +213,7 @@ const Foods = () => {
 };
 
 export default Foods;
+
 
 
 

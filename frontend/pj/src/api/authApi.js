@@ -10,7 +10,6 @@ export const authApi = createApi({
   tagTypes: ["Profile", "Seller", "Food", "Cart"],
 
   endpoints: (builder) => ({
-
     // ⭐ SIGNUP
     signup: builder.mutation({
       query: (body) => ({
@@ -161,6 +160,41 @@ export const authApi = createApi({
       invalidatesTags: ["Cart"],
     }),
 
+    // ⭐⭐⭐ PLACE ORDER
+    placeOrder: builder.mutation({
+      query: (body) => ({
+        url: "/place-order",
+        method: "POST",
+        body,
+        headers: { "Content-Type": "application/json" },
+      }),
+      invalidatesTags: ["Cart"], // because after order, cart should refresh
+    }),
+
+    // ⭐⭐⭐ GET MY ORDERS (BUYER HISTORY)
+    getMyOrders: builder.query({
+      query: () => "/my-orders",
+    }),
+
+    getSellerOrders: builder.query({
+      query: () => "/seller-orders",
+    }),
+
+    // ⭐⭐⭐ DELETE BUYER ORDER (Cancel Order)
+    deleteMyOrder: builder.mutation({
+      query: (orderId) => ({
+        url: `/my-orders/${orderId}`,
+        method: "DELETE",
+      }),
+    }),
+
+    // ⭐⭐⭐ DELETE SELLER ORDER
+    deleteSellerOrder: builder.mutation({
+      query: (orderId) => ({
+        url: `/seller-orders/${orderId}`,
+        method: "DELETE",
+      }),
+    }),
   }),
 });
 
@@ -180,12 +214,21 @@ export const {
   useDeleteFoodMutation,
   useGetAllFoodsQuery,
 
-  // ⭐ CART HOOKS
+  // Cart
   useAddToCartMutation,
   useGetMyCartQuery,
   useIncreaseQtyMutation,
   useDecreaseQtyMutation,
   useDeleteCartItemMutation,
-} = authApi;
 
+  // Orders
+  usePlaceOrderMutation,
+  useGetMyOrdersQuery,
+  useGetSellerOrdersQuery,
+
+  // NEW DELETE HOOKS
+  useDeleteMyOrderMutation,
+  useDeleteSellerOrderMutation
+
+} = authApi;
 

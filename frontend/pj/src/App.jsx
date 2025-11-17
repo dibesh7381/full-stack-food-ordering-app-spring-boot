@@ -13,6 +13,8 @@ import BecomeSeller from "./pages/BecomeSeller";
 import SellerDashboard from "./pages/SellerDashboard";
 import Foods from "./pages/Foods";
 import Cart from "./pages/Cart";
+import MyOrders from "./pages/MyOrders"; // ⭐ NEW IMPORT
+import SellerOrders from "./pages/SellerOrders";
 
 export default function App() {
   return (
@@ -20,13 +22,12 @@ export default function App() {
       <Navbar />
 
       <Routes>
-
-        {/* Public */}
+        {/* ⭐ PUBLIC ROUTES */}
         <Route path="/" element={<Homepage />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/login" element={<Login />} />
 
-        {/* Private */}
+        {/* ⭐ PRIVATE PROFILE */}
         <Route
           path="/profile"
           element={
@@ -36,7 +37,7 @@ export default function App() {
           }
         />
 
-        {/* ⭐ Foods — Logged-in users only */}
+        {/* ⭐ FOODS — LOGGED-IN USERS ONLY */}
         <Route
           path="/foods"
           element={
@@ -52,6 +53,16 @@ export default function App() {
           element={
             <RoleBasedRoute allowedRoles={["CUSTOMER"]}>
               <Cart />
+            </RoleBasedRoute>
+          }
+        />
+
+        {/* ⭐ CUSTOMER ONLY → MY ORDERS */}
+        <Route
+          path="/my-orders"
+          element={
+            <RoleBasedRoute allowedRoles={["CUSTOMER"]}>
+              <MyOrders />
             </RoleBasedRoute>
           }
         />
@@ -76,11 +87,15 @@ export default function App() {
           }
         />
 
+        <Route
+          path="/seller/orders"
+          element={
+            <RoleBasedRoute allowedRoles={["SELLER"]}>
+              <SellerOrders />
+            </RoleBasedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );
 }
-
-
-
-
