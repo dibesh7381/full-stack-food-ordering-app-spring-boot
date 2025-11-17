@@ -12,6 +12,7 @@ import com.cloudinary.utils.ObjectUtils;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -30,6 +31,9 @@ public class AuthService {
     private FoodRepository foodRepository;
 
     @Autowired
+    private CartRepository cartRepository;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -37,6 +41,8 @@ public class AuthService {
 
     @Autowired
     private Cloudinary cloudinary;
+
+
 
     // ⭐ SIGNUP
     public SignupResponseDTO signup(SignupRequestDTO request) {
@@ -61,6 +67,8 @@ public class AuthService {
         );
     }
 
+
+
     // ⭐ LOGIN
     public LoginResponseDTO login(LoginRequestDTO request) {
 
@@ -82,6 +90,8 @@ public class AuthService {
         );
     }
 
+
+
     // ⭐ GET PROFILE
     public ProfileResponseDTO getProfile(String email) {
 
@@ -95,6 +105,8 @@ public class AuthService {
                 user.getRole()
         );
     }
+
+
 
     // ⭐ UPDATE PROFILE
     public ProfileResponseDTO updateProfile(String email, UpdateProfileRequestDTO dto) {
@@ -115,6 +127,8 @@ public class AuthService {
         );
     }
 
+
+
     // ⭐ HOME PAGE
     public HomePageDTO homePage() {
         return new HomePageDTO(
@@ -123,7 +137,9 @@ public class AuthService {
         );
     }
 
-    // ⭐ BECOME SELLER (photo + role upgrade)
+
+
+    // ⭐ BECOME SELLER
     public SellerResponseDTO becomeSeller(String email, SellerRequestDTO dto, org.springframework.web.multipart.MultipartFile image) {
 
         User user = userRepository.findByEmail(email);
@@ -133,7 +149,7 @@ public class AuthService {
             throw new CustomException("You are already a seller!", 400);
         }
 
-        // ⭐ Cloudinary Upload
+        // ⭐ Upload image to cloudinary
         String imageUrl;
         try {
             var upload = cloudinary.uploader().upload(
@@ -145,7 +161,6 @@ public class AuthService {
             throw new CustomException("Image upload failed!", 500);
         }
 
-        // ⭐ Save Seller
         Seller seller = new Seller(
                 null,
                 user.getId(),
@@ -163,7 +178,6 @@ public class AuthService {
         user.setRole("SELLER");
         userRepository.save(user);
 
-        // Generate new JWT
         String newToken = jwtUtil.generateToken(user.getEmail(), user.getRole());
 
         return new SellerResponseDTO(
@@ -179,6 +193,8 @@ public class AuthService {
                 newToken
         );
     }
+
+
 
     // ⭐ GET SELLER DETAILS
     public SellerResponseDTO getSeller(String email) {
@@ -203,7 +219,9 @@ public class AuthService {
         );
     }
 
-    // ⭐ ⭐ ⭐  ADD FOOD — BASE64 VERSION
+
+
+    // ⭐ ADD FOOD
     public FoodResponseDTO addFood(String email, AddFoodRequest dto) throws Exception {
 
         User user = userRepository.findByEmail(email);
@@ -212,7 +230,6 @@ public class AuthService {
         Seller seller = sellerRepository.findByUserId(user.getId());
         if (seller == null) throw new CustomException("You are not a seller!", 403);
 
-        // ⭐ Upload base64 → Cloudinary
         String imageUrl;
         try {
             Map upload = cloudinary.uploader().upload(
@@ -224,24 +241,23 @@ public class AuthService {
             throw new CustomException("Image upload failed!", 500);
         }
 
-        // ⭐ Create Food object
         Food food = new Food();
         food.setName(dto.getName());
         food.setType(dto.getType());
         food.setCategory(dto.getCategory());
         food.setDescription(dto.getDescription());
-        food.setImageUrl(imageUrl);
         food.setSellerId(user.getId());
+        food.setImageUrl(imageUrl);
 
-        List<FoodSize> sizeList = dto.getSizes().stream()
+        List<FoodSize> sizes = dto.getSizes().stream()
                 .map(s -> new FoodSize(s.getSize(), s.getPrice()))
                 .toList();
 
-        food.setSizes(sizeList);
+        food.setSizes(sizes);
 
         Food saved = foodRepository.save(food);
 
-        List<FoodSizeDTO> sizeDTOs = sizeList.stream()
+        List<FoodSizeDTO> sizeDTOs = sizes.stream()
                 .map(s -> new FoodSizeDTO(s.getSize(), s.getPrice()))
                 .toList();
 
@@ -257,7 +273,9 @@ public class AuthService {
         );
     }
 
-    // ⭐ GET SELLER’S FOODS
+
+
+    // ⭐ GET MY FOODS
     public List<FoodResponseDTO> getMyFoods(String email) {
 
         User user = userRepository.findByEmail(email);
@@ -284,6 +302,8 @@ public class AuthService {
         ).toList();
     }
 
+
+
     // ⭐ UPDATE FOOD
     public FoodResponseDTO updateFood(String email, String id, UpdateFoodRequest dto) throws Exception {
 
@@ -296,13 +316,12 @@ public class AuthService {
         Food food = foodRepository.findById(id)
                 .orElseThrow(() -> new CustomException("Food not found!", 404));
 
-        // UPDATE FIELDS
         food.setName(dto.getName());
         food.setType(dto.getType());
         food.setCategory(dto.getCategory());
         food.setDescription(dto.getDescription());
 
-        // ⭐ If image changed → upload new base64
+        // upload new image if changed
         if (dto.getImageBase64() != null && dto.getImageBase64().startsWith("data")) {
             Map upload = cloudinary.uploader().upload(
                     dto.getImageBase64(),
@@ -311,11 +330,9 @@ public class AuthService {
             food.setImageUrl(upload.get("secure_url").toString());
         }
 
-        // sizes update
-        food.setSizes(
-                dto.getSizes().stream()
-                        .map(s -> new FoodSize(s.getSize(), s.getPrice()))
-                        .toList()
+        food.setSizes(dto.getSizes().stream()
+                .map(s -> new FoodSize(s.getSize(), s.getPrice()))
+                .toList()
         );
 
         Food saved = foodRepository.save(food);
@@ -336,6 +353,8 @@ public class AuthService {
         );
     }
 
+
+
     // ⭐ DELETE FOOD
     public void deleteFood(String email, String id) {
 
@@ -348,7 +367,9 @@ public class AuthService {
         foodRepository.delete(food);
     }
 
-    // ⭐ GET ALL FOODS (PUBLIC)
+
+
+    // ⭐ GET ALL FOODS
     public List<FoodResponseDTO> getAllFoods() {
 
         List<Food> foods = foodRepository.findAll();
@@ -372,9 +393,164 @@ public class AuthService {
 
         }).toList();
     }
+
+
+
+    // ⭐⭐⭐ ADD TO CART — NEW SERVICE METHOD HERE
+    public CartItemResponseDTO addToCart(String email, AddToCartRequestDTO req) {
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new CustomException("User not found!", 404);
+
+        Food food = foodRepository.findById(req.getFoodId())
+                .orElseThrow(() -> new CustomException("Food not found!", 404));
+
+        // find size price
+        FoodSize size = food.getSizes().stream()
+                .filter(s -> s.getSize().equals(req.getSize()))
+                .findFirst()
+                .orElseThrow(() -> new CustomException("Invalid size!", 400));
+
+        double price = size.getPrice() * req.getQuantity();
+
+        // if item exists → update quantity
+        if (cartRepository.existsByUserIdAndFoodIdAndSize(user.getId(), req.getFoodId(), req.getSize())) {
+
+            CartItem item = cartRepository.findByUserIdAndFoodIdAndSize(
+                    user.getId(),
+                    req.getFoodId(),
+                    req.getSize());
+
+            item.setQuantity(item.getQuantity() + req.getQuantity());
+            item.setPrice(item.getQuantity() * size.getPrice());
+
+            CartItem updated = cartRepository.save(item);
+
+            return new CartItemResponseDTO(
+                    updated.getId(),
+                    updated.getFoodId(),
+                    updated.getFoodName(),
+                    updated.getSize(),
+                    updated.getQuantity(),
+                    updated.getPrice(),
+                    updated.getImageUrl()
+            );
+        }
+
+        // new item
+        CartItem newItem = new CartItem(
+                null,
+                user.getId(),
+                food.getId(),
+                food.getName(),
+                req.getSize(),
+                req.getQuantity(),
+                price,
+                food.getImageUrl()
+        );
+
+        CartItem saved = cartRepository.save(newItem);
+
+        return new CartItemResponseDTO(
+                saved.getId(),
+                saved.getFoodId(),
+                saved.getFoodName(),
+                saved.getSize(),
+                saved.getQuantity(),
+                saved.getPrice(),
+                saved.getImageUrl()
+        );
+    }
+
+    public List<CartItemResponseDTO> getMyCart(String email) {
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new CustomException("User not found!", 404);
+
+        List<CartItem> items = cartRepository.findByUserId(user.getId());
+
+        return items.stream()
+                .map(item -> new CartItemResponseDTO(
+                        item.getId(),
+                        item.getFoodId(),
+                        item.getFoodName(),
+                        item.getSize(),
+                        item.getQuantity(),
+                        item.getPrice(),
+                        item.getImageUrl()
+                ))
+                .toList();
+    }
+
+    public CartItemResponseDTO increaseQty(String email, String cartId) {
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new CustomException("User not found!", 404);
+
+        CartItem item = cartRepository.findById(cartId)
+                .orElseThrow(() -> new CustomException("Cart item not found!", 404));
+
+        // increase qty
+        item.setQuantity(item.getQuantity() + 1);
+
+        // unit price = price/qtyBefore
+        double unitPrice = item.getPrice() / (item.getQuantity() - 1);
+        item.setPrice(item.getQuantity() * unitPrice);
+
+        CartItem saved = cartRepository.save(item);
+
+        return new CartItemResponseDTO(
+                saved.getId(),
+                saved.getFoodId(),
+                saved.getFoodName(),
+                saved.getSize(),
+                saved.getQuantity(),
+                saved.getPrice(),
+                saved.getImageUrl()
+        );
+    }
+
+    public CartItemResponseDTO decreaseQty(String email, String cartId) {
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new CustomException("User not found!", 404);
+
+        CartItem item = cartRepository.findById(cartId)
+                .orElseThrow(() -> new CustomException("Cart item not found!", 404));
+
+        // if qty = 1 → delete
+        if (item.getQuantity() == 1) {
+            cartRepository.delete(item);
+            throw new CustomException("Item removed from cart", 200);
+        }
+
+        double unitPrice = item.getPrice() / item.getQuantity();
+
+        item.setQuantity(item.getQuantity() - 1);
+        item.setPrice(item.getQuantity() * unitPrice);
+
+        CartItem saved = cartRepository.save(item);
+
+        return new CartItemResponseDTO(
+                saved.getId(),
+                saved.getFoodId(),
+                saved.getFoodName(),
+                saved.getSize(),
+                saved.getQuantity(),
+                saved.getPrice(),
+                saved.getImageUrl()
+        );
+    }
+
+    public void deleteCartItem(String email, String cartId) {
+
+        User user = userRepository.findByEmail(email);
+        if (user == null) throw new CustomException("User not found!", 404);
+
+        CartItem item = cartRepository.findById(cartId)
+                .orElseThrow(() -> new CustomException("Cart item not found!", 404));
+
+        cartRepository.delete(item);
+    }
+
 }
-
-
-
-
-

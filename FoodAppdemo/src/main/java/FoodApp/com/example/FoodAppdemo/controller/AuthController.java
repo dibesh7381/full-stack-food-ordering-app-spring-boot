@@ -31,6 +31,7 @@ public class AuthController {
     }
 
 
+
     // ⭐ LOGIN
     @PostMapping("/login")
     @PreAuthorize("permitAll()")
@@ -54,6 +55,7 @@ public class AuthController {
     }
 
 
+
     // ⭐ LOGOUT
     @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
@@ -73,6 +75,7 @@ public class AuthController {
     }
 
 
+
     // ⭐ PROFILE
     @GetMapping("/profile")
     @PreAuthorize("isAuthenticated()")
@@ -83,6 +86,7 @@ public class AuthController {
 
         return ResponseEntity.ok(new ApiResponseDTO<>(true, "Profile fetched successfully", profile));
     }
+
 
 
     // ⭐ UPDATE PROFILE
@@ -98,6 +102,7 @@ public class AuthController {
     }
 
 
+
     // ⭐ HOME PAGE
     @GetMapping("/homepage")
     @PreAuthorize("permitAll()")
@@ -105,6 +110,7 @@ public class AuthController {
         HomePageDTO dto = authService.homePage();
         return ResponseEntity.ok(new ApiResponseDTO<>(true, "HomePage fetched successfully", dto));
     }
+
 
 
     // ⭐ BECOME SELLER
@@ -119,7 +125,6 @@ public class AuthController {
 
         SellerResponseDTO response = authService.becomeSeller(email, dto, image);
 
-        // NEW JWT cookie
         String newToken = response.getToken();
         ResponseCookie tokenCookie = ResponseCookie.from("token", newToken)
                 .httpOnly(true)
@@ -137,6 +142,7 @@ public class AuthController {
     }
 
 
+
     // ⭐ GET SELLER DETAILS
     @GetMapping("/seller")
     @PreAuthorize("hasAuthority('SELLER')")
@@ -152,7 +158,8 @@ public class AuthController {
     }
 
 
-    // ⭐ ADD FOOD (Base64 Only)
+
+    // ⭐ ADD FOOD
     @PostMapping("/add-food")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<FoodResponseDTO>> addFood(
@@ -168,7 +175,9 @@ public class AuthController {
         );
     }
 
-    // ⭐ GET ALL FOODS OF THIS SELLER
+
+
+    // ⭐ GET MY FOODS
     @GetMapping("/my-foods")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<List<FoodResponseDTO>>> getMyFoods() {
@@ -181,12 +190,12 @@ public class AuthController {
 
 
 
-    // ⭐ UPDATE FOOD (Base64 JSON)
+    // ⭐ UPDATE FOOD
     @PutMapping("/update-food/{id}")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<FoodResponseDTO>> updateFood(
             @PathVariable String id,
-            @RequestBody UpdateFoodRequest dto   // ⭐ Required Body
+            @RequestBody UpdateFoodRequest dto
     ) throws Exception {
 
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
@@ -195,7 +204,6 @@ public class AuthController {
 
         return ResponseEntity.ok(new ApiResponseDTO<>(true, "Food updated successfully", updated));
     }
-
 
 
 
@@ -210,7 +218,9 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponseDTO<>(true, "Food deleted successfully", null));
     }
 
-    // ⭐ GET ALL FOODS (Public)
+
+
+    // ⭐ GET ALL FOODS (Authenticated)
     @GetMapping("/all-foods")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponseDTO<List<FoodResponseDTO>>> getAllFoods() {
@@ -222,7 +232,81 @@ public class AuthController {
         );
     }
 
+    // ⭐⭐⭐ ADD TO CART — NEW API
+    @PostMapping("/add-to-cart")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<CartItemResponseDTO>> addToCart(
+            @RequestBody AddToCartRequestDTO req
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        CartItemResponseDTO response = authService.addToCart(email, req);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Item added to cart", response)
+        );
+    }
+    // ⭐⭐⭐ GET ALL CART ITEMS
+    @GetMapping("/my-cart")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<List<CartItemResponseDTO>>> getMyCart() {
+
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        List<CartItemResponseDTO> items = authService.getMyCart(email);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Cart items fetched successfully", items)
+        );
+    }
+
+    // ⭐⭐⭐ INCREASE QUANTITY
+    @PutMapping("/cart/increase/{cartId}")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<CartItemResponseDTO>> increaseQty(
+            @PathVariable String cartId
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        CartItemResponseDTO updated = authService.increaseQty(email, cartId);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Quantity increased", updated)
+        );
+    }
+
+    // ⭐⭐⭐ DECREASE QUANTITY
+    @PutMapping("/cart/decrease/{cartId}")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<CartItemResponseDTO>> decreaseQty(
+            @PathVariable String cartId
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        CartItemResponseDTO updated = authService.decreaseQty(email, cartId);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Quantity decreased", updated)
+        );
+    }
+
+    // ⭐⭐⭐ DELETE CART ITEM
+    @DeleteMapping("/cart/delete/{cartId}")
+    @PreAuthorize("hasAuthority('CUSTOMER')")
+    public ResponseEntity<ApiResponseDTO<String>> deleteCartItem(
+            @PathVariable String cartId
+    ) {
+        String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+
+        authService.deleteCartItem(email, cartId);
+
+        return ResponseEntity.ok(
+                new ApiResponseDTO<>(true, "Item removed from cart", null)
+        );
+    }
+
 }
+
 
 
 
