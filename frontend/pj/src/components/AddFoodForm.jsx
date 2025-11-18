@@ -7,7 +7,6 @@ import {
 } from "../api/authApi";
 
 const AddFoodForm = () => {
-
   const sizeOptionsByCategory = {
     Curry: ["HALF", "REGULAR", "LARGE"],
     Pizza: ["SMALL", "MEDIUM", "LARGE"],
@@ -22,30 +21,21 @@ const AddFoodForm = () => {
     type: "",
     category: "",
     description: "",
-    imageBase64: "",
   });
 
+  const [imageFile, setImageFile] = useState(null);
   const [sizes, setSizes] = useState([]);
   const [prices, setPrices] = useState({});
+  const [editingId, setEditingId] = useState(null);
 
-  const [editingId, setEditingId] = useState(null); // ⭐ EDIT MODE
-
-  // HOOKS
   const [addFood] = useAddFoodMutation();
   const [updateFood] = useUpdateFoodMutation();
   const { data: foodsData } = useGetMyFoodsQuery();
   const [deleteFood] = useDeleteFoodMutation();
 
-  // ⭐ IMAGE TO BASE64
+  // ⭐ IMAGE FILE HANDLER (no Base64)
   const handleImage = (e) => {
-    const file = e.target.files[0];
-    const reader = new FileReader();
-
-    reader.onloadend = () => {
-      setFormData((prev) => ({ ...prev, imageBase64: reader.result }));
-    };
-
-    reader.readAsDataURL(file);
+    setImageFile(e.target.files[0]);
   };
 
   const handleCategoryChange = (value) => {
@@ -63,14 +53,14 @@ const AddFoodForm = () => {
       type: "",
       category: "",
       description: "",
-      imageBase64: "",
     });
+    setImageFile(null);
     setSizes([]);
     setPrices({});
     setEditingId(null);
   };
 
-  // ⭐ SUBMIT HANDLER (ADD + UPDATE)
+  // ⭐ SUBMIT HANDLER (ADD + UPDATE — MULTIPART)
   const handleSubmit = async (e) => {
     e.preventDefault();
 
@@ -79,18 +69,32 @@ const AddFoodForm = () => {
       price: Number(prices[size] || 0),
     }));
 
-    const payload = { ...formData, sizes: finalSizes };
+    // JSON data part
+    const jsonData = {
+      ...formData,
+      sizes: finalSizes,
+    };
 
     try {
       if (editingId) {
-        // ⭐ UPDATE
-        await updateFood({ id: editingId, body: payload }).unwrap();
+        // ⭐ UPDATE FOOD
+        await updateFood({
+          id: editingId,
+          data: jsonData,
+          image: imageFile || null,
+        }).unwrap();
+
         alert("Food Updated!");
       } else {
-        // ⭐ ADD NEW
-        await addFood(payload).unwrap();
+        // ⭐ ADD FOOD
+        await addFood({
+          data: jsonData,
+          image: imageFile,
+        }).unwrap();
+
         alert("Food Added!");
       }
+
       resetForm();
     } catch (err) {
       console.error(err);
@@ -114,12 +118,12 @@ const AddFoodForm = () => {
   // ⭐ EDIT FOOD — PREFILL FORM
   const handleEdit = (food) => {
     setEditingId(food.id);
+
     setFormData({
       name: food.name,
       type: food.type,
       category: food.category,
       description: food.description,
-      imageBase64: food.imageUrl, // ⭐ optional: existing image
     });
 
     setSizes(food.sizes.map((s) => s.size));
@@ -127,6 +131,8 @@ const AddFoodForm = () => {
     const priceMap = {};
     food.sizes.forEach((s) => (priceMap[s.size] = s.price));
     setPrices(priceMap);
+
+    setImageFile(null); // new file optional
   };
 
   return (
@@ -286,6 +292,7 @@ const AddFoodForm = () => {
 };
 
 export default AddFoodForm;
+
 
 
 

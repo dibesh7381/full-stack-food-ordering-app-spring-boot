@@ -31,7 +31,7 @@ export default function Navbar() {
   return (
     <>
       {/* TOP NAVBAR */}
-      <nav className="bg-blue-600 text-white p-4 flex justify-between items-center">
+      <nav className="bg-blue-600 text-white p-4 flex justify-between items-center relative z-40">
         <Link to="/">
           <h1 className="font-bold text-xl">FoodApp 🍔</h1>
         </Link>
@@ -54,16 +54,12 @@ export default function Navbar() {
             <>
               <Link to="/become-seller">Become Seller</Link>
 
-              {/* ⭐ CART ICON WITH BADGE */}
               <Link to="/cart" className="relative">
-                <ShoppingCart size={26} className="text-white hover:text-gray-200" />
+                <ShoppingCart size={26} className="hover:text-gray-200" />
 
-                {/* BADGE */}
                 {cartCount > 0 && (
-                  <span className="
-                    absolute -top-2 -right-2 bg-red-500 text-white text-xs
-                    px-2 py-[2px] rounded-full
-                    ">
+                  <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs
+                    px-2 py-[2px] rounded-full">
                     {cartCount}
                   </span>
                 )}
@@ -92,11 +88,19 @@ export default function Navbar() {
         </button>
       </nav>
 
-      {/* MOBILE SIDEBAR */}
+      {/* ⭐ MOBILE OVERLAY – no black background */}
+      {open && (
+        <div 
+          onClick={() => setOpen(false)}
+          className="fixed inset-0 bg-transparent z-40 md:hidden"
+        ></div>
+      )}
+
+      {/* ⭐ MOBILE SIDEBAR */}
       <div
-        className={`fixed top-0 right-0 h-full w-64 bg-blue-700 text-white shadow-xl transform transition-transform duration-300 md:hidden ${
-          open ? "translate-x-0" : "translate-x-full"
-        }`}
+        className={`fixed top-0 right-0 h-full w-64 bg-blue-700 text-white shadow-xl 
+          transform transition-transform duration-300 md:hidden z-50
+          ${open ? "translate-x-0" : "translate-x-full"}`}
       >
         <div className="flex justify-between items-center p-4 border-b border-blue-500">
           <h2 className="text-lg font-bold">Menu</h2>
@@ -123,14 +127,12 @@ export default function Navbar() {
                 Become Seller
               </Link>
 
-              {/* ⭐ MOBILE CART WITH COUNT */}
               <Link 
                 to="/cart"
                 className="flex items-center gap-2"
                 onClick={() => setOpen(false)}
               >
                 <ShoppingCart size={22} />
-
                 Cart
 
                 {cartCount > 0 && (
@@ -169,6 +171,7 @@ export default function Navbar() {
     </>
   );
 }
+
 
 
 
