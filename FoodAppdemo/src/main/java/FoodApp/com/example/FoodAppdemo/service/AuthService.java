@@ -10,6 +10,8 @@ import com.cloudinary.utils.ObjectUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
+
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -140,7 +142,7 @@ public class AuthService {
 
 
     // ⭐ BECOME SELLER
-    public SellerResponseDTO becomeSeller(String email, SellerRequestDTO dto, org.springframework.web.multipart.MultipartFile image) {
+    public SellerResponseDTO becomeSeller(String email, SellerRequestDTO dto, MultipartFile image) {
 
         User user = userRepository.findByEmail(email);
         if (user == null) throw new CustomException("User not found!", 404);
@@ -222,7 +224,7 @@ public class AuthService {
 
 
     // ⭐ ADD FOOD
-    public FoodResponseDTO addFood(String email, AddFoodRequest dto) throws Exception {
+    public FoodResponseDTO addFood(String email, MultipartFile image, AddFoodRequest dto) throws Exception {
 
         User user = userRepository.findByEmail(email);
         if (user == null) throw new CustomException("User not found!", 404);
@@ -230,10 +232,11 @@ public class AuthService {
         Seller seller = sellerRepository.findByUserId(user.getId());
         if (seller == null) throw new CustomException("You are not a seller!", 403);
 
+        // ⭐ Upload multipart image
         String imageUrl;
         try {
-            Map upload = cloudinary.uploader().upload(
-                    dto.getImageBase64(),
+            var upload = cloudinary.uploader().upload(
+                    image.getBytes(),
                     ObjectUtils.asMap("folder", "foodapp/foods")
             );
             imageUrl = upload.get("secure_url").toString();
@@ -275,6 +278,7 @@ public class AuthService {
 
 
 
+
     // ⭐ GET MY FOODS
     public List<FoodResponseDTO> getMyFoods(String email) {
 
@@ -305,7 +309,12 @@ public class AuthService {
 
 
     // ⭐ UPDATE FOOD
-    public FoodResponseDTO updateFood(String email, String id, UpdateFoodRequest dto) throws Exception {
+    public FoodResponseDTO updateFood(
+            String email,
+            MultipartFile image,
+            String id,
+            UpdateFoodRequest dto
+    ) throws Exception {
 
         User user = userRepository.findByEmail(email);
         if (user == null) throw new CustomException("User not found!", 404);
@@ -321,18 +330,19 @@ public class AuthService {
         food.setCategory(dto.getCategory());
         food.setDescription(dto.getDescription());
 
-        // upload new image if changed
-        if (dto.getImageBase64() != null && dto.getImageBase64().startsWith("data")) {
-            Map upload = cloudinary.uploader().upload(
-                    dto.getImageBase64(),
+        // ⭐ upload multipart image if provided
+        if (image != null && !image.isEmpty()) {
+            var upload = cloudinary.uploader().upload(
+                    image.getBytes(),
                     ObjectUtils.asMap("folder", "foodapp/foods")
             );
             food.setImageUrl(upload.get("secure_url").toString());
         }
 
-        food.setSizes(dto.getSizes().stream()
-                .map(s -> new FoodSize(s.getSize(), s.getPrice()))
-                .toList()
+        food.setSizes(
+                dto.getSizes().stream()
+                        .map(s -> new FoodSize(s.getSize(), s.getPrice()))
+                        .toList()
         );
 
         Food saved = foodRepository.save(food);
@@ -352,6 +362,7 @@ public class AuthService {
                 seller.getShopName()
         );
     }
+
 
 
 
@@ -676,8 +687,5 @@ public class AuthService {
 
         orderRepository.delete(order);
     }
-
-
-
 
 }

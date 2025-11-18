@@ -2,7 +2,6 @@ package FoodApp.com.example.FoodAppdemo.controller;
 
 import FoodApp.com.example.FoodAppdemo.dto.*;
 import FoodApp.com.example.FoodAppdemo.service.AuthService;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
@@ -80,7 +79,6 @@ public class AuthController {
     @GetMapping("/profile")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponseDTO<ProfileResponseDTO>> profile() {
-
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
         ProfileResponseDTO profile = authService.getProfile(email);
 
@@ -159,16 +157,17 @@ public class AuthController {
 
 
 
-    // ⭐ ADD FOOD
+    // ⭐ ADD FOOD — NOW MULTIPART
     @PostMapping("/add-food")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<FoodResponseDTO>> addFood(
-            @RequestBody AddFoodRequest dto
+            @RequestPart("data") AddFoodRequest dto,
+            @RequestPart("image") MultipartFile image
     ) throws Exception {
 
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        FoodResponseDTO savedFood = authService.addFood(email, dto);
+        FoodResponseDTO savedFood = authService.addFood(email, image, dto);
 
         return ResponseEntity.ok(
                 new ApiResponseDTO<>(true, "Food added successfully", savedFood)
@@ -190,22 +189,21 @@ public class AuthController {
 
 
 
-    // ⭐ UPDATE FOOD
+    // ⭐ UPDATE FOOD — NOW MULTIPART
     @PutMapping("/update-food/{id}")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<FoodResponseDTO>> updateFood(
             @PathVariable String id,
-            @RequestBody UpdateFoodRequest dto
+            @RequestPart("data") UpdateFoodRequest dto,
+            @RequestPart(value = "image", required = false) MultipartFile image
     ) throws Exception {
 
         String email = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
 
-        FoodResponseDTO updated = authService.updateFood(email, id, dto);
+        FoodResponseDTO updated = authService.updateFood(email, image, id, dto);
 
         return ResponseEntity.ok(new ApiResponseDTO<>(true, "Food updated successfully", updated));
     }
-
-
 
     // ⭐ DELETE FOOD
     @DeleteMapping("/delete-food/{id}")
@@ -218,9 +216,7 @@ public class AuthController {
         return ResponseEntity.ok(new ApiResponseDTO<>(true, "Food deleted successfully", null));
     }
 
-
-
-    // ⭐ GET ALL FOODS (Authenticated)
+    // ⭐ GET ALL FOODS
     @GetMapping("/all-foods")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ApiResponseDTO<List<FoodResponseDTO>>> getAllFoods() {
@@ -232,7 +228,7 @@ public class AuthController {
         );
     }
 
-    // ⭐⭐⭐ ADD TO CART — NEW API
+    // ⭐⭐⭐ ADD TO CART
     @PostMapping("/add-to-cart")
     @PreAuthorize("hasAuthority('CUSTOMER')")
     public ResponseEntity<ApiResponseDTO<CartItemResponseDTO>> addToCart(
@@ -246,6 +242,7 @@ public class AuthController {
                 new ApiResponseDTO<>(true, "Item added to cart", response)
         );
     }
+
     // ⭐⭐⭐ GET ALL CART ITEMS
     @GetMapping("/my-cart")
     @PreAuthorize("hasAuthority('CUSTOMER')")
@@ -320,7 +317,7 @@ public class AuthController {
         );
     }
 
-    // ⭐⭐⭐ GET MY ORDERS (BUYER HISTORY)
+    // ⭐⭐⭐ GET MY ORDERS
     @GetMapping("/my-orders")
     @PreAuthorize("hasAuthority('CUSTOMER')")
     public ResponseEntity<ApiResponseDTO<List<OrderResponseDTO>>> getMyOrders() {
@@ -334,7 +331,7 @@ public class AuthController {
         );
     }
 
-    // ⭐⭐⭐ GET SELLER ORDERS LIST
+    // ⭐⭐⭐ GET SELLER ORDERS
     @GetMapping("/seller-orders")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<List<OrderResponseDTO>>> getSellerOrders() {
@@ -348,7 +345,7 @@ public class AuthController {
         );
     }
 
-    // ⭐⭐⭐ DELETE BUYER ORDER (Cancel Order)
+    // ⭐⭐⭐ DELETE BUYER ORDER
     @DeleteMapping("/my-orders/{orderId}")
     @PreAuthorize("hasAuthority('CUSTOMER')")
     public ResponseEntity<ApiResponseDTO<String>> deleteMyOrder(
@@ -364,7 +361,7 @@ public class AuthController {
     }
 
 
-    // ⭐⭐⭐ DELETE SELLER ORDER (Seller removes order)
+    // ⭐⭐⭐ DELETE SELLER ORDER
     @DeleteMapping("/seller-orders/{orderId}")
     @PreAuthorize("hasAuthority('SELLER')")
     public ResponseEntity<ApiResponseDTO<String>> deleteSellerOrder(
@@ -379,11 +376,5 @@ public class AuthController {
         );
     }
 
-
-
-
 }
-
-
-
 
