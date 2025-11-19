@@ -7,11 +7,12 @@ export const authApi = createApi({
     credentials: "include",
   }),
 
-  tagTypes: ["Profile", "Seller", "Food", "Cart"],
+  tagTypes: ["Profile", "Seller", "Food", "Cart", "Orders"],
 
   endpoints: (builder) => ({
-
-    // ⭐ SIGNUP
+    // ----------------------------------
+    // SIGNUP
+    // ----------------------------------
     signup: builder.mutation({
       query: (body) => ({
         url: "/signup",
@@ -20,7 +21,7 @@ export const authApi = createApi({
       }),
     }),
 
-    // ⭐ LOGIN
+    // LOGIN
     login: builder.mutation({
       query: (body) => ({
         url: "/login",
@@ -30,16 +31,16 @@ export const authApi = createApi({
       invalidatesTags: ["Profile", "Seller"],
     }),
 
-    // ⭐ LOGOUT
+    // LOGOUT
     logout: builder.mutation({
       query: () => ({
         url: "/logout",
         method: "POST",
       }),
-      invalidatesTags: ["Profile", "Seller", "Cart"],
+      invalidatesTags: ["Profile", "Seller", "Cart", "Orders"],
     }),
 
-    // ⭐ PROFILE
+    // PROFILE
     profile: builder.query({
       query: () => "/profile",
       providesTags: ["Profile"],
@@ -58,11 +59,17 @@ export const authApi = createApi({
       query: () => "/homepage",
     }),
 
-    // ⭐ BECOME SELLER — MULTIPART
+    // ----------------------------------
+    // SELLER SYSTEM
+    // ----------------------------------
+
     becomeSeller: builder.mutation({
       query: ({ data, image }) => {
         const formData = new FormData();
-        formData.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
+        formData.append(
+          "data",
+          new Blob([JSON.stringify(data)], { type: "application/json" })
+        );
         formData.append("image", image);
 
         return {
@@ -74,17 +81,22 @@ export const authApi = createApi({
       invalidatesTags: ["Profile", "Seller"],
     }),
 
-    // ⭐ GET SELLER DETAILS
     getSeller: builder.query({
       query: () => "/seller",
       providesTags: ["Seller"],
     }),
 
-    // ⭐ ADD FOOD — MULTIPART
+    // ----------------------------------
+    // FOOD SYSTEM
+    // ----------------------------------
+
     addFood: builder.mutation({
       query: ({ data, image }) => {
         const formData = new FormData();
-        formData.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
+        formData.append(
+          "data",
+          new Blob([JSON.stringify(data)], { type: "application/json" })
+        );
         formData.append("image", image);
 
         return {
@@ -96,21 +108,20 @@ export const authApi = createApi({
       invalidatesTags: ["Food"],
     }),
 
-    // ⭐ MY FOODS
     getMyFoods: builder.query({
       query: () => "/my-foods",
       providesTags: ["Food"],
     }),
 
-    // ⭐ UPDATE FOOD — MULTIPART
     updateFood: builder.mutation({
       query: ({ id, data, image }) => {
         const formData = new FormData();
-        formData.append("data", new Blob([JSON.stringify(data)], { type: "application/json" }));
+        formData.append(
+          "data",
+          new Blob([JSON.stringify(data)], { type: "application/json" })
+        );
 
-        if (image) {
-          formData.append("image", image);
-        }
+        if (image) formData.append("image", image);
 
         return {
           url: `/update-food/${id}`,
@@ -121,7 +132,6 @@ export const authApi = createApi({
       invalidatesTags: ["Food"],
     }),
 
-    // ⭐ DELETE FOOD
     deleteFood: builder.mutation({
       query: (id) => ({
         url: `/delete-food/${id}`,
@@ -130,13 +140,15 @@ export const authApi = createApi({
       invalidatesTags: ["Food"],
     }),
 
-    // ⭐ GET ALL FOODS
     getAllFoods: builder.query({
       query: () => "/all-foods",
       providesTags: ["Food"],
     }),
 
-    // ⭐⭐⭐ ADD TO CART
+    // ----------------------------------
+    // CART SYSTEM
+    // ----------------------------------
+
     addToCart: builder.mutation({
       query: (body) => ({
         url: "/add-to-cart",
@@ -146,13 +158,11 @@ export const authApi = createApi({
       invalidatesTags: ["Cart"],
     }),
 
-    // ⭐⭐⭐ GET MY CART
     getMyCart: builder.query({
       query: () => "/my-cart",
       providesTags: ["Cart"],
     }),
 
-    // ⭐⭐⭐ INCREASE QTY
     increaseQty: builder.mutation({
       query: (cartId) => ({
         url: `/cart/increase/${cartId}`,
@@ -161,7 +171,6 @@ export const authApi = createApi({
       invalidatesTags: ["Cart"],
     }),
 
-    // ⭐⭐⭐ DECREASE QTY
     decreaseQty: builder.mutation({
       query: (cartId) => ({
         url: `/cart/decrease/${cartId}`,
@@ -170,7 +179,6 @@ export const authApi = createApi({
       invalidatesTags: ["Cart"],
     }),
 
-    // ⭐⭐⭐ DELETE CART ITEM
     deleteCartItem: builder.mutation({
       query: (cartId) => ({
         url: `/cart/delete/${cartId}`,
@@ -179,43 +187,55 @@ export const authApi = createApi({
       invalidatesTags: ["Cart"],
     }),
 
-    // ⭐⭐⭐ PLACE ORDER
+    // ----------------------------------
+    // ORDER SYSTEM (CUSTOMER)
+    // ----------------------------------
+
     placeOrder: builder.mutation({
       query: (body) => ({
         url: "/place-order",
         method: "POST",
         body,
       }),
-      invalidatesTags: ["Cart"],
+      invalidatesTags: ["Cart", "Orders"],
     }),
 
-    // ⭐⭐⭐ GET MY ORDERS
     getMyOrders: builder.query({
       query: () => "/my-orders",
+      providesTags: ["Orders"],
     }),
+
+    // ⭐ UPDATED: CANCEL ORDER
+    cancelMyOrder: builder.mutation({
+      query: (orderId) => ({
+        url: `/my-orders/cancel/${orderId}`,
+        method: "PUT",
+      }),
+      invalidatesTags: ["Orders"],
+    }),
+
+    // ----------------------------------
+    // ORDER SYSTEM (SELLER)
+    // ----------------------------------
 
     getSellerOrders: builder.query({
       query: () => "/seller-orders",
+      providesTags: ["Orders"],
     }),
 
-    // ⭐⭐⭐ DELETE BUYER ORDER
-    deleteMyOrder: builder.mutation({
+    cancelSellerOrder: builder.mutation({
       query: (orderId) => ({
-        url: `/my-orders/${orderId}`,
-        method: "DELETE",
+        url: `/seller-orders/cancel/${orderId}`,
+        method: "PUT",
       }),
+      invalidatesTags: ["Orders"],
     }),
-
-    // ⭐⭐⭐ DELETE SELLER ORDER
-    deleteSellerOrder: builder.mutation({
-      query: (orderId) => ({
-        url: `/seller-orders/${orderId}`,
-        method: "DELETE",
-      }),
-    }),
-
   }),
 });
+
+// ----------------------------------
+// EXPORT HOOKS
+// ----------------------------------
 
 export const {
   useSignupMutation,
@@ -224,6 +244,7 @@ export const {
   useProfileQuery,
   useUpdateProfileMutation,
   useHomepageQuery,
+
   useBecomeSellerMutation,
   useGetSellerQuery,
 
@@ -241,9 +262,8 @@ export const {
 
   usePlaceOrderMutation,
   useGetMyOrdersQuery,
+  useCancelMyOrderMutation,        // ⭐ NEW
   useGetSellerOrdersQuery,
-
-  useDeleteMyOrderMutation,
-  useDeleteSellerOrderMutation
-
+  useCancelSellerOrderMutation,    // ⭐ NEW
 } = authApi;
+
