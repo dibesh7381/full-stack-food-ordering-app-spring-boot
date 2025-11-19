@@ -15,6 +15,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Service
 public class AuthService {
@@ -32,7 +33,11 @@ public class AuthService {
     private CartRepository cartRepository;
 
     @Autowired
-    private OrderRepository orderRepository;
+    private CustomerOrderRepository customerOrderRepository;
+
+    @Autowired
+    private SellerOrderRepository sellerOrderRepository;
+
 
 
     @Autowired
@@ -565,7 +570,8 @@ public class AuthService {
     }
 
 
-    public OrderResponseDTO placeOrder(String email, PlaceOrderRequestDTO req) {
+    // ⭐⭐⭐ PLACE ORDER
+    public CustomerOrderResponseDTO placeOrder(String email, PlaceOrderRequestDTO req) {
 
         User buyer = userRepository.findByEmail(email);
         if (buyer == null) throw new CustomException("User not found!", 404);
@@ -583,109 +589,153 @@ public class AuthService {
 
         double price = size.getPrice() * req.getQuantity();
 
-        // SAVE ORDER
-        Order order = new Order(
-                null,                      // id
-                buyer.getId(),            // buyerId (Long)
-                food.getId(),             // foodId (String)
-                food.getName(),           // foodName
-                req.getSize(),            // size
-                req.getQuantity(),        // quantity
-                price,                    // price
-                seller.getId().toString(),// sellerId (String)
-                LocalDateTime.now()       // createdAt
+        // 🔥 Common sync ID
+        String trackingId = UUID.randomUUID().toString();
+
+
+        // ⭐ CUSTOMER ORDER CREATE
+        CustomerOrder custOrder = new CustomerOrder(
+                null,
+                trackingId,
+                buyer.getId(),
+                food.getId(),
+                food.getName(),
+                req.getSize(),
+                req.getQuantity(),
+                price,
+                food.getSellerId(),
+                "PLACED",
+                LocalDateTime.now()
         );
+        customerOrderRepository.save(custOrder);
 
 
-        Order savedOrder = orderRepository.save(order);
+        // ⭐ SELLER ORDER CREATE
+        SellerOrder sellerOrder = new SellerOrder(
+                null,
+                trackingId,
+                food.getSellerId(),
+                buyer.getId(),
+                buyer.getUsername(),
+                food.getId(),
+                food.getName(),
+                req.getSize(),
+                req.getQuantity(),
+                price,
+                "PLACED",
+                LocalDateTime.now()
+        );
+        sellerOrderRepository.save(sellerOrder);
 
-        return new OrderResponseDTO(
-                savedOrder.getId(),
-                savedOrder.getFoodName(),
-                savedOrder.getSize(),
-                savedOrder.getQuantity(),
-                savedOrder.getPrice(),
-                savedOrder.getCreatedAt().toString()
+
+        // ⭐ RESPONSE
+        return new CustomerOrderResponseDTO(
+                custOrder.getId(),
+                trackingId,
+                custOrder.getFoodName(),
+                custOrder.getSize(),
+                custOrder.getQuantity(),
+                custOrder.getPrice(),
+                custOrder.getCreatedAt().toString(),
+                custOrder.getStatus()
         );
     }
 
-    public List<OrderResponseDTO> getMyOrders(String email) {
 
-        User user = userRepository.findByEmail(email);
-        if (user == null) throw new CustomException("User not found!", 404);
 
-        return orderRepository.findByBuyerId(user.getId())
+
+
+
+    // ⭐⭐⭐ GET CUSTOMER ORDERS
+    public List<CustomerOrderResponseDTO> getMyOrders(String email) {
+
+        User buyer = userRepository.findByEmail(email);
+        if (buyer == null) throw new CustomException("User not found!", 404);
+
+        return customerOrderRepository.findByBuyerId(buyer.getId())
                 .stream()
-                .map(o -> new OrderResponseDTO(
+                .map(o -> new CustomerOrderResponseDTO(
                         o.getId(),
+                        o.getTrackingId(),
                         o.getFoodName(),
                         o.getSize(),
                         o.getQuantity(),
                         o.getPrice(),
-                        o.getCreatedAt().toString()
-                )).toList();
+                        o.getCreatedAt().toString(),
+                        o.getStatus()
+                ))
+                .toList();
     }
 
-    public List<OrderResponseDTO> getSellerOrders(String email) {
+    // ⭐⭐⭐ GET SELLER ORDERS
+    public List<SellerOrderResponseDTO> getSellerOrders(String email) {
 
         User seller = userRepository.findByEmail(email);
         if (seller == null) throw new CustomException("User not found!", 404);
 
-        // find all foods of seller
-        List<Food> foods = foodRepository.findBySellerId(seller.getId());
-
-        // Collect ALL foodIds that belong to seller
-        List<String> foodIds = foods.stream()
-                .map(Food::getId)
-                .toList();
-
-        // find all orders where foodId is in seller's foods
-        List<Order> orders = orderRepository.findByFoodIdIn(foodIds);
-
-        return orders.stream()
-                .map(o -> new OrderResponseDTO(
+        return sellerOrderRepository.findBySellerId(seller.getId())
+                .stream()
+                .map(o -> new SellerOrderResponseDTO(
                         o.getId(),
+                        o.getTrackingId(),
                         o.getFoodName(),
+                        o.getBuyerName(),
                         o.getSize(),
                         o.getQuantity(),
                         o.getPrice(),
+                        o.getStatus(),
                         o.getCreatedAt().toString()
                 ))
                 .toList();
     }
 
-    public void deleteMyOrder(String email, String orderId) {
+    // ⭐⭐⭐ CUSTOMER CANCEL → SYNC DELETE
+    public void cancelMyOrder(String email, String orderId) {
 
         User buyer = userRepository.findByEmail(email);
         if (buyer == null) throw new CustomException("User not found!", 404);
 
-        Order order = orderRepository.findById(orderId)
+        CustomerOrder custOrder = customerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException("Order not found!", 404));
 
-        // Check if buyer deleting own order
-        if (!order.getBuyerId().equals(buyer.getId())) {
+        if (!custOrder.getBuyerId().equals(buyer.getId()))
             throw new CustomException("Not your order!", 403);
-        }
 
-        orderRepository.delete(order);
+        // ⭐ Customer side status
+        custOrder.setStatus("CANCELLED");
+        customerOrderRepository.save(custOrder);
+
+        // ⭐ Seller side status
+        SellerOrder sellerOrder = sellerOrderRepository.findByTrackingId(custOrder.getTrackingId());
+        if (sellerOrder != null) {
+            sellerOrder.setStatus("CANCELLED BY CUSTOMER");
+            sellerOrderRepository.save(sellerOrder);
+        }
     }
 
-
-
-    public void deleteSellerOrder(String email, String orderId) {
+    // ⭐⭐⭐ SELLER CANCEL → SYNC DELETE
+    public void cancelSellerOrder(String email, String orderId) {
 
         User seller = userRepository.findByEmail(email);
         if (seller == null) throw new CustomException("User not found!", 404);
 
-        Order order = orderRepository.findById(orderId)
+        SellerOrder sellerOrder = sellerOrderRepository.findById(orderId)
                 .orElseThrow(() -> new CustomException("Order not found!", 404));
 
-        // Check if order belongs to seller
-        if (!order.getSellerId().equals(seller.getId().toString())) {
-            throw new CustomException("You cannot delete others' orders!", 403);
-        }
+        if (!sellerOrder.getSellerId().equals(seller.getId()))
+            throw new CustomException("Not your order!", 403);
 
-        orderRepository.delete(order);
+        // ⭐ Seller side status
+        sellerOrder.setStatus("CANCELLED");
+        sellerOrderRepository.save(sellerOrder);
+
+        // ⭐ Customer side status
+        CustomerOrder custOrder = customerOrderRepository.findByTrackingId(sellerOrder.getTrackingId());
+        if (custOrder != null) {
+            custOrder.setStatus("CANCELLED BY SELLER");
+            customerOrderRepository.save(custOrder);
+        }
     }
+
 
 }
